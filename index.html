@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VANKWISH. | Centralised Football Intelligence Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.6.1/dist/chart.umd.min.js"></script>
+  <style>
+    @media print {
+      body { background: #ffffff !important; color: #0f172a !important; }
+      .no-print { display: none !important; }
+      .print-card {
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #0f172a !important;
+        break-inside: avoid;
+      }
+      .print-text-dark { color: #0f172a !important; }
+      .print-text-muted { color: #475569 !important; }
+      .print-bg-light { background: #f8fafc !important; }
+      canvas { max-height: 250px !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 antialiased min-h-screen">
+
+  <!-- Unified Vankwish Top Shell -->
+  <header class="border-b border-slate-800 bg-slate-900/95 sticky top-0 z-30 backdrop-blur no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3 overflow-x-auto">
+      <div class="flex items-center gap-3 shrink-0">
+        <span class="text-lg font-black tracking-widest text-white">VANKWISH<span class="text-emerald-400">.</span></span>
+        <span class="hidden xl:inline-block text-[11px] uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 whitespace-nowrap">
+          Football Intelligence
+        </span>
+      </div>
+
+      <!-- Module Switcher -->
+      <nav class="flex items-center gap-2 text-xs sm:text-sm shrink-0">
+        <button id="tabBtn1" class="px-3.5 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 font-semibold whitespace-nowrap transition">
+          01 / Player Comparisons
+        </button>
+        <button id="tabBtn2" class="px-3.5 py-1.5 rounded-lg bg-slate-800/80 text-slate-300 hover:text-white border border-slate-700 font-medium whitespace-nowrap transition">
+          02 / Club Fit (Lewis Hall)
+        </button>
+      </nav>
+
+      <!-- Context-Aware Actions -->
+      <div class="flex items-center gap-2 shrink-0">
+        <div id="csvControls" class="flex items-center gap-2">
+          <label class="cursor-pointer px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 whitespace-nowrap transition">
+            Import CSV
+            <input id="csvInput" type="file" accept=".csv" class="hidden" />
+          </label>
+          <button id="resetBtn" class="hidden px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-300 whitespace-nowrap transition">
+            Reset
+          </button>
+        </div>
+        <button onclick="window.print()"
+          class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 whitespace-nowrap transition">
+          Export PDF
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+
+    <!-- Print-Only Branded Header -->
+    <div class="hidden print:flex justify-between items-end border-b-2 border-slate-900 pb-3 mb-5">
+      <div>
+        <h1 class="text-2xl font-black tracking-widest text-slate-900">VANKWISH.</h1>
+        <p class="text-xs text-slate-600" id="printSubtitle">Module 01 — Player Marketing &amp; Step-Up Assessment</p>
+      </div>
+      <div class="text-right text-xs text-slate-600" id="printMeta">2026/27 Season | As of 26 Nov 2026</div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- MODULE 01: LEAGUE ONE STRIKER COMPARISON (TASK 1)         -->
+    <!-- ========================================================= -->
+    <div id="viewTab1" class="space-y-6">
+      <section class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-widest text-emerald-400">01 / Player Comparisons &amp; Step-Up Assessment · EFL League One (2026/27)</p>
+          <h1 class="text-2xl sm:text-3xl font-bold text-white print-text-dark mt-1">
+            League One Striker Benchmark: Selling Up to the Championship
+          </h1>
+          <p class="text-sm text-slate-400 print-text-muted mt-1">
+            Target asset <strong class="text-white print-text-dark">Joe Taylor (24, Huddersfield)</strong> benchmarked against top 2026/27 League One peers <strong class="text-slate-200 print-text-dark">Aaron Collins</strong> &amp; <strong class="text-slate-200 print-text-dark">Kyle Wootton</strong>.
+          </p>
+        </div>
+
+        <div class="inline-flex rounded-lg bg-slate-900 p-1 border border-slate-800 shrink-0 self-start no-print">
+          <button id="modePer90" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-emerald-500 text-slate-950 whitespace-nowrap transition">Per 90 Mins</button>
+          <button id="modeTotals" class="px-3 py-1.5 text-xs font-semibold rounded-md text-slate-400 hover:text-white whitespace-nowrap transition">Season Totals</button>
+        </div>
+      </section>
+
+      <div id="csvBanner" class="hidden rounded-xl border border-sky-500/40 bg-sky-500/10 px-4 py-3 text-xs text-sky-200 no-print">
+        <span id="csvBannerText"></span>
+      </div>
+
+      <!-- Editable Executive Verdict -->
+      <section class="print-card rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/30 p-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Championship: Ready Now (Direct / Counter Systems)</span>
+            <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">Premier League: Buy-and-Loan Only</span>
+          </div>
+          <span class="text-[11px] text-slate-400 no-print">Click narrative below to edit before exporting PDF</span>
+        </div>
+        <h2 class="text-lg sm:text-xl font-bold text-white print-text-dark">Sell to Transition-Heavy Championship Club — Not Premier League First-Team Ready</h2>
+        <p id="t1EditableNarrative" contenteditable="true"
+          class="mt-2 text-sm leading-relaxed text-slate-300 print-text-dark rounded-lg p-2 -mx-2 hover:bg-slate-800/60 focus:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-400 transition">
+          At 24, Joe Taylor offers the strongest balance of repeatable box output (10 goals from 9.21 xG and 10.72 xGOT) and resale upside compared to older peers Aaron Collins (29) and Kyle Wootton (30). Unlike Collins—whose 13 goals from 8.11 xG / 7.82 xGOT indicate hot finishing likely to regress a tier up—Taylor's 53% shot accuracy and 1.86 line-breaking passes per 90 show scalable threat. Pitch him strictly to direct or transition-heavy Championship clubs (13 of his 51 shots come from fast breaks), avoiding possession-heavy sides requiring an aerial target man (34.0% aerial win rate at 170 cm).
+        </p>
+      </section>
+
+      <!-- Player Summary Cards -->
+      <section id="t1PlayerCards" class="grid grid-cols-1 md:grid-cols-3 gap-4"></section>
+
+      <!-- Charts Row -->
+      <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="print-card rounded-2xl border border-slate-800 bg-slate-900 p-5">
+          <h3 class="text-base font-bold text-white print-text-dark">Striker Skill Profile (Normalized 0–100)</h3>
+          <p class="text-xs text-slate-400 print-text-muted mb-3">Relative profile across finishing, box threat, progression &amp; aerial ability</p>
+          <div class="relative h-72"><canvas id="t1RadarChart"></canvas></div>
+        </div>
+        <div class="print-card rounded-2xl border border-slate-800 bg-slate-900 p-5">
+          <h3 class="text-base font-bold text-white print-text-dark" id="t1BarChartTitle">Finishing Sustainability (Per 90): Goals vs xG vs xGOT</h3>
+          <p class="text-xs text-slate-400 print-text-muted mb-3">Spots overperformance risk before pitching a striker to a higher division</p>
+          <div class="relative h-72"><canvas id="t1FinishingChart"></canvas></div>
+        </div>
+      </section>
+
+      <!-- Side-by-Side Matrix -->
+      <section class="print-card rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="text-base font-bold text-white print-text-dark">Side-by-Side Performance Matrix</h3>
+            <p class="text-xs text-slate-400 print-text-muted">Green highlights mark the peer-group leader per metric</p>
+          </div>
+          <span id="t1TableModeLabel" class="text-xs font-medium px-2.5 py-1 rounded bg-slate-800 text-emerald-300"></span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left">
+            <thead class="bg-slate-950/70 text-xs uppercase text-slate-400 border-b border-slate-800" id="t1ComparisonHead"></thead>
+            <tbody class="divide-y divide-slate-800/80" id="t1ComparisonBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Step-Up Reality Check -->
+      <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="print-card rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="text-base font-bold text-white print-text-dark">Championship Translation Assessment</h3>
+            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 whitespace-nowrap">Recommended Tier</span>
+          </div>
+          <ul class="text-sm text-slate-300 print-text-dark space-y-2 list-disc list-inside">
+            <li><strong>Repeatable Shot Placement:</strong> 10.72 xGOT (+1.51 above xG) and 53% shot accuracy show genuine finishing quality rather than lucky variance.</li>
+            <li><strong>Age &amp; Contract Value:</strong> At 24 (Jun 2029 contract, €620K est. value), Taylor offers prime physical years and resale equity that Collins (29) and Wootton (30) lack.</li>
+            <li><strong>System Constraint:</strong> Lowest touch volume (26.3/90) and 34.0% aerial win rate mean pitching strictly to vertical, transition-heavy Championship sides.</li>
+          </ul>
+        </div>
+        <div class="print-card rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="text-base font-bold text-white print-text-dark">Premier League Feasibility Check</h3>
+            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 whitespace-nowrap">Not Immediate Fit</span>
+          </div>
+          <ul class="text-sm text-slate-300 print-text-dark space-y-2 list-disc list-inside">
+            <li><strong>Two-Tier Jump Risk:</strong> Direct League One to Premier League starters are rare; attackers see a sharp drop in shot volume and space jumping two divisions.</li>
+            <li><strong>Link-Up Gap:</strong> 67.5% pass accuracy and 0.98 xA across 14 games trail the technical floor Premier League clubs demand from a lone #9.</li>
+            <li><strong>Realistic PL Angle:</strong> Viable only as a low-risk buy-and-loan-back deal to a Championship club first, selling his pace and 24 line-breaking passes as the upside hook.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Task 1 Governance Footer -->
+      <footer class="print-card rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-xs text-slate-400 print-text-muted space-y-1.5">
+        <div class="flex flex-wrap gap-x-6 gap-y-1">
+          <span><strong class="text-slate-200 print-text-dark">Source:</strong> FotMob Public Match Data (2026/27 EFL League One)</span>
+          <span><strong class="text-slate-200 print-text-dark">As-Of Date:</strong> 26 Nov 2026 (Pre-GW17)</span>
+          <span><strong class="text-slate-200 print-text-dark">Missing Values:</strong> Aaron Collins contract expiry unavailable in public records (flagged N/A).</span>
+        </div>
+        <p class="text-slate-500 print-text-muted">Prototype data layer — architected to swap cleanly to licensed Hudl StatsBomb API, Wyscout CSV, or Sportmonks feeds in production.</p>
+      </footer>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- MODULE 02: LEWIS HALL — CLUB POSITIONAL INTELLIGENCE      -->
+    <!-- ========================================================= -->
+    <div id="viewTab2" class="hidden space-y-6">
+      <section class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-widest text-sky-400">02 / Club Positional Intelligence · Premier League (2026/27)</p>
+          <h1 class="text-2xl sm:text-3xl font-bold text-white print-text-dark mt-1">
+            Lewis Hall (Newcastle United) — Statistical Profile &amp; Club Fit Matrix
+          </h1>
+          <p class="text-sm text-slate-400 print-text-muted mt-1">
+            Cross-referencing Hall's 2026/27 fullback metrics against Premier League team build-up profiles, confirmed squad gaps, and transfer feasibility.
+          </p>
+        </div>
+
+        <!-- Confirmed vs Inferred Filter (Vankwish Brief Module 02 Requirement) -->
+        <div class="inline-flex rounded-lg bg-slate-900 p-1 border border-slate-800 shrink-0 self-start no-print">
+          <button id="t2FilterAll" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-sky-500 text-slate-950 whitespace-nowrap transition">All Clubs</button>
+          <button id="t2FilterConfirmed" class="px-3 py-1.5 text-xs font-semibold rounded-md text-slate-400 hover:text-white whitespace-nowrap transition">Confirmed Need</button>
+          <button id="t2FilterInferred" class="px-3 py-1.5 text-xs font-semibold rounded-md text-slate-400 hover:text-white whitespace-nowrap transition">Inferred Fit</button>
+        </div>
+      </section>
+
+      <!-- Editable Transfer Strategy Pitch -->
+      <section class="print-card rounded-2xl border border-sky-500/30 bg-gradient-to-br from-slate-900 via-slate-900 to-sky-950/30 p-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">#1 Overall Fit: Manchester United (Confirmed Need)</span>
+            <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/40">#1 Tactical Fit: Manchester City (Inferred)</span>
+            <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">Target Window: Summer 2027 (£65M–£80M+)</span>
+          </div>
+          <span class="text-[11px] text-slate-400 no-print">Click narrative below to edit before exporting PDF</span>
+        </div>
+        <h2 class="text-lg sm:text-xl font-bold text-white print-text-dark">Ball-Progressing Hybrid Left-Back Outgrowing Newcastle's Build-Up Volume</h2>
+        <p id="t2EditableNarrative" contenteditable="true"
+          class="mt-2 text-sm leading-relaxed text-slate-300 print-text-dark rounded-lg p-2 -mx-2 hover:bg-slate-800/60 focus:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-400 transition">
+          At 22 with 9 senior England caps, Lewis Hall ranks in the 92nd percentile for touches (820) and completes 84.0% of his passes (123 line-breaking passes) inside a Newcastle side sitting 13th in the Premier League for accurate passes per match (328.7 at 81.1%). Because his crossing accuracy (20.9%) and aerial win rate (37.0%) remain modest, he should be pitched strictly as an inverted / progression left-back to high-pass clubs rather than touchline-crossing teams. Manchester United represent the strongest commercial and sporting match under Mauricio Pochettino after missing their summer LB target, while Newcastle's new June 2031 contract makes Summer 2027—not January—the realistic transfer window.
+        </p>
+      </section>
+
+      <!-- Lewis Hall Dossier & KPI Strip -->
+      <section class="print-card rounded-2xl border border-slate-800 bg-slate-900 p-5">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 class="text-xl font-bold text-white print-text-dark">Lewis Hall</h2>
+              <span class="px-2 py-0.5 text-xs font-semibold rounded bg-slate-800 text-slate-200 border border-slate-700">LB · Left Foot</span>
+              <span class="px-2 py-0.5 text-xs font-semibold rounded bg-sky-500/15 text-sky-300 border border-sky-500/30">England (9 Caps)</span>
+            </div>
+            <p class="text-xs text-slate-400 print-text-muted mt-1">
+              Newcastle United · Age 22 (Sep 2004) · 179 cm · Contract: <strong class="text-slate-200 print-text-dark">Jun 2031</strong> · Est. Market Value: <strong class="text-emerald-400">€63M</strong>
+            </p>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="text-right">
+              <div class="text-2xl font-black text-sky-400">7.16</div>
+              <div class="text-[10px] uppercase tracking-wider text-slate-400">PL Rating (11 Starts)</div>
+            </div>
+            <div class="h-10 w-px bg-slate-800"></div>
+            <div class="text-right">
+              <div class="text-2xl font-black text-white print-text-dark">988'</div>
+              <div class="text-[10px] uppercase tracking-wider text-slate-400">2026/27 PL Mins</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="t2KpiStrip" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-4"></div>
+      </section>
+
+      <!-- Task 2 Charts Row -->
+      <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="print-card rounded-2xl border border-slate-800 bg-slate-900 p-5">
+          <h3 class="text-base font-bold text-white print-text-dark">Hall vs Premier League Fullbacks (Percentiles)</h3>
+          <p class="text-xs text-slate-400 print-text-muted mb-3">Verified 2026/27 FotMob fullback rankings highlighting ball dominance &amp; defensive volume</p>
+          <div class="relative h-72"><canvas id="t2PercentileChart"></canvas></div>
+        </div>
+
+        <div class="print-card rounded-2xl border border-slate-800 bg-slate-900 p-5">
+          <h3 class="text-base font-bold text-white print-text-dark">Club Build-Up Environment: Accurate Passes / Match</h3>
+          <p class="text-xs text-slate-400 print-text-muted mb-3">Why Hall (84.0% pass accuracy, 92nd pct touches) unlocks higher ceiling in top-6 pass ecosystems</p>
+          <div class="relative h-72"><canvas id="t2ClubPassChart"></canvas></div>
+        </div>
+      </section>
+
+      <!-- Prioritised Club Fit Matrix Table -->
+      <section class="print-card rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="text-base font-bold text-white print-text-dark">Premier League Club Statistical Fit Matrix (2026/27)</h3>
+            <p class="text-xs text-slate-400 print-text-muted">Separating confirmed squad requirements from inferred tactical opportunities per Vankwish brief</p>
+          </div>
+          <div class="flex items-center gap-2 text-[11px]">
+            <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Confirmed Need</span>
+            <span class="px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">Inferred Opportunity</span>
+            <span class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">Current Baseline</span>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left">
+            <thead class="bg-slate-950/70 text-xs uppercase text-slate-400 border-b border-slate-800">
+              <tr>
+                <th class="px-4 py-3">Club</th>
+                <th class="px-4 py-3">Need Classification</th>
+                <th class="px-4 py-3 text-right">Fit Score</th>
+                <th class="px-4 py-3 text-right">Possession (Rank)</th>
+                <th class="px-4 py-3 text-right">Acc. Passes / % (Rank)</th>
+                <th class="px-4 py-3 text-right">Acc. Crosses / % (Rank)</th>
+                <th class="px-4 py-3">Statistical &amp; Squad Verdict</th>
+              </tr>
+            </thead>
+            <tbody id="t2ClubTableBody" class="divide-y divide-slate-800/80"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Detailed Destination Pitch Cards -->
+      <section id="t2ClubCards" class="grid grid-cols-1 md:grid-cols-2 gap-4"></section>
+
+      <!-- Risk Flags & Transfer Feasibility -->
+      <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="print-card rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="text-base font-bold text-white print-text-dark">Tactical Limitations &amp; Medical Due Diligence</h3>
+            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300">Honest Flags</span>
+          </div>
+          <ul class="text-sm text-slate-300 print-text-dark space-y-2 list-disc list-inside">
+            <li><strong>Not a Traditional Crosser:</strong> 20.9% crossing accuracy (9 accurate crosses) lags Man City's 32.1% team rate—pitch him for inside-channel progression (123 line-breaking passes), not overlapping touchline delivery.</li>
+            <li><strong>Aerial Vulnerability:</strong> 37.0% aerial duel win rate (10 won) requires a dominant left-sided centre-back alongside him against direct Premier League wingers.</li>
+            <li><strong>Fitness Status (26 Nov 2026):</strong> Withdrawn in stoppage time vs Arsenal (2–2) with cramp; expected fit for Brighton away (29 Nov) under Matthias Jaissle, though buyers will review his 2025 ankle surgery medical file.</li>
+          </ul>
+        </div>
+
+        <div class="print-card rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="text-base font-bold text-white print-text-dark">Commercial &amp; Timing Reality</h3>
+            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300">Agency Positioning</span>
+          </div>
+          <ul class="text-sm text-slate-300 print-text-dark space-y-2 list-disc list-inside">
+            <li><strong>Contract Leverage:</strong> Hall signed a long-term Newcastle extension through June 2031, giving Newcastle zero PSR urgency to sell mid-season.</li>
+            <li><strong>Fee Benchmark:</strong> While third-party models estimate €63M, Newcastle's stance plus homegrown England international premium pushes realistic summer pricing toward <strong>£65M–£80M+</strong>.</li>
+            <li><strong>Recommended Pitch Sequence:</strong> Position Manchester United as the primary <strong>Summer 2027</strong> buyer (highest immediate starting slot + Pochettino rebuild), with Tottenham and Man City as secondary high-possession benchmarks to establish market tension.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Task 2 Governance Footer -->
+      <footer class="print-card rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-xs text-slate-400 print-text-muted space-y-1.5">
+        <div class="flex flex-wrap gap-x-6 gap-y-1">
+          <span><strong class="text-slate-200 print-text-dark">Source:</strong> FotMob 2026/27 Premier League Player &amp; Team Data (11 Matches)</span>
+          <span><strong class="text-slate-200 print-text-dark">As-Of Date:</strong> 26 Nov 2026 (Pre-GW12)</span>
+          <span><strong class="text-slate-200 print-text-dark">Missing Values:</strong> Exact weekly wage &amp; release clause figures unavailable in public data (flagged for Vankwish internal input).</span>
+        </div>
+        <p class="text-slate-500 print-text-muted">Confirmed vs Inferred classifications mirror Module 02 of the Vankwish brief; production version connects directly to agency requirements uploads and licensed APIs.</p>
+      </footer>
+    </div>
+
+  </main>
+
+  <script>
+    /* ================================================================
+       DATA STORE (TASK 1 & TASK 2 — VERIFIED 26 NOV 2026)
+       ================================================================ */
+    const TASK1_DEFAULT = [
+      {
+        roleTag: "Target Asset (Sell Up)", name: "Joe Taylor", club: "Huddersfield Town",
+        age: 24, heightCm: 170, contractExpiry: "Jun 2029", marketValue: "€620K",
+        matches: 14, minutes: 1164, goals: 10, assists: 2, xg: 9.21, xgot: 10.72,
+        shots: 51, shotAccuracyPct: 53.0, fastBreakShots: 13, accuratePasses: 108,
+        passAccuracyPct: 67.5, lineBreakingPasses: 24, xa: 0.98, touches: 340,
+        aerialWinPct: 34.0, rating: 7.50, color: "#10b981"
+      },
+      {
+        roleTag: "Creative / High-Output Peer", name: "Aaron Collins", club: "MK Dons",
+        age: 29, heightCm: 178, contractExpiry: "N/A (Missing)", marketValue: "€340K",
+        matches: 13, minutes: 988, goals: 13, assists: 3, xg: 8.11, xgot: 7.82,
+        shots: 44, shotAccuracyPct: 39.0, fastBreakShots: 7, accuratePasses: 105,
+        passAccuracyPct: 65.2, lineBreakingPasses: 19, xa: 2.92, touches: 381,
+        aerialWinPct: 33.3, rating: 7.77, color: "#38bdf8"
+      },
+      {
+        roleTag: "Target-Man Peer", name: "Kyle Wootton", club: "Stockport County",
+        age: 30, heightCm: 188, contractExpiry: "Jun 2027", marketValue: "€490K",
+        matches: 15, minutes: 1300, goals: 10, assists: 2, xg: 9.59, xgot: 9.21,
+        shots: 55, shotAccuracyPct: 31.0, fastBreakShots: 1, accuratePasses: 179,
+        passAccuracyPct: 80.6, lineBreakingPasses: 13, xa: 0.38, touches: 405,
+        aerialWinPct: 60.4, rating: 7.38, color: "#f59e0b"
+      }
+    ];
+
+    const TASK2_DATA = {
+      kpis: [
+        { label: "Touches (Pct)", value: "820", sub: "92nd pct vs PL FBs", accent: "text-emerald-400" },
+        { label: "Pass Accuracy", value: "84.0%", sub: "400 acc. passes (+2.9% vs team)", accent: "text-sky-400" },
+        { label: "Line-Breaking", value: "123", sub: "11.2 per 90 progression", accent: "text-sky-400" },
+        { label: "Chances Created", value: "11", sub: "2 Big Chances (#1 at NUFC)", accent: "text-white print-text-dark" },
+        { label: "Def. Actions", value: "92", sub: "78th pct · 23 Tkl · 18 Int", accent: "text-emerald-400" },
+        { label: "Top Speed", value: "33.3", sub: "km/h · 119.4 km covered", accent: "text-amber-400" }
+      ],
+      percentiles: [
+        { label: "Touches", value: 92 },
+        { label: "Defensive Contributions", value: 78 },
+        { label: "Chances Created", value: 76 },
+        { label: "Shot Attempts", value: 68 },
+        { label: "Aerial Duels Won (Vol)", value: 58 },
+        { label: "Goals", value: 40 }
+      ],
+      clubs: [
+        {
+          club: "Manchester United",
+          needType: "confirmed",
+          needLabel: "Confirmed Need",
+          fitScore: 93,
+          possession: 53.3, possRank: "7th",
+          accPasses: 429.1, passPct: 84.9, passRank: "6th",
+          accCrosses: 4.7, crossPct: 23.4, crossRank: "6th",
+          shortVerdict: "#1 Overall Fit — Immediate starter pathway & +100 more accurate passes/match than Newcastle.",
+          pitchPoints: [
+            "Squad Gap: Missed #1 LB target in summer; Mauricio Pochettino needs a long-term left-back anchor alongside/succeeding Luke Shaw.",
+            "Statistical Fit: United's 84.9% pass accuracy closely mirrors Hall's 84.0% output while adding +100.4 accurate passes/match over Newcastle.",
+            "Commercial Reality: Strongest willingness to meet £65M–£80M+ summer valuation for a 22-year-old England regular."
+          ]
+        },
+        {
+          club: "Manchester City",
+          needType: "inferred",
+          needLabel: "Inferred Opportunity",
+          fitScore: 88,
+          possession: 64.8, possRank: "1st",
+          accPasses: 562.7, passPct: 88.7, passRank: "1st",
+          accCrosses: 6.1, crossPct: 32.1, crossRank: "1st",
+          shortVerdict: "#1 Tactical Ceiling — Ideal inverted progression profile, though crossing (20.9%) lags City's 32.1%.",
+          pitchPoints: [
+            "Tactical Match: Former Chelsea midfielder composure (92nd-pct touches, 123 line-breaking passes) fits City's inverted LB blueprint naturally.",
+            "Efficiency Gap: City lead the league in pass accuracy (88.7%) and cross accuracy (32.1%), requiring Hall to sharpen final-third delivery.",
+            "Squad Urgency: Lower immediate urgency than United due to existing left-sided depth."
+          ]
+        },
+        {
+          club: "Tottenham Hotspur",
+          needType: "inferred",
+          needLabel: "Inferred Opportunity",
+          fitScore: 85,
+          possession: 62.8, possRank: "2nd",
+          accPasses: 509.2, passPct: 88.2, passRank: "2nd",
+          accCrosses: 5.2, crossPct: 22.3, crossRank: "4th",
+          shortVerdict: "High-Line Progression Fit — 2nd in PL passes/possession matches Hall's 33.3 km/h recovery speed.",
+          pitchPoints: [
+            "High-Line Insurance: Hall's 33.3 km/h top speed and 78th-percentile defensive contributions cover huge transition spaces behind Spurs' high line.",
+            "Crossing Tolerance: Spurs' 22.3% cross success aligns closely with Hall's 20.9%, reducing tactical friction.",
+            "Build-Up Boost: Jumps Hall into the league's #2 passing ecosystem (509.2 accurate passes/match)."
+          ]
+        },
+        {
+          club: "Arsenal",
+          needType: "inferred",
+          needLabel: "Inferred Opportunity",
+          fitScore: 81,
+          possession: 60.3, possRank: "4th",
+          accPasses: 441.9, passPct: 85.9, passRank: "5th",
+          accCrosses: 4.2, crossPct: 24.9, crossRank: "9th",
+          shortVerdict: "Defensive Control Fit — Strong statistical alignment, but low squad urgency at left-back.",
+          pitchPoints: [
+            "Dual-Phase Fit: Combines 84.0% build-up security with 92 defensive actions (23 tackles, 18 interceptions) suited to Arsenal's control model.",
+            "Squad Saturation: Existing fullback depth lowers Arsenal's priority to pay a £70M+ domestic premium.",
+            "Agent Use Case: Valuable tactical benchmark when demonstrating Hall's Champions League-calibre defensive floor."
+          ]
+        },
+        {
+          club: "Newcastle United",
+          needType: "baseline",
+          needLabel: "Current Baseline",
+          fitScore: 74,
+          possession: 48.9, possRank: "9th",
+          accPasses: 328.7, passPct: 81.1, passRank: "13th",
+          accCrosses: 3.3, crossPct: 20.5, crossRank: "17th",
+          shortVerdict: "Current Club — Hall outperforms team pass accuracy (+2.9%) and leads squad in big chances created.",
+          pitchPoints: [
+            "Outgrowing Ecosystem: Hall is already posting elite fullback touch volume (92nd pct) inside the 13th-ranked passing team in the league.",
+            "Guaranteed Minutes: Undisputed starter (988 PL mins across 11 starts) with strong coach backing from Matthias Jaissle.",
+            "Retention Stance: New June 2031 contract secures Newcastle's leverage through January 2027."
+          ]
+        }
+      ]
+    };
+
+    /* ================================================================
+       STATE & HELPERS
+       ================================================================ */
+    let activeTab = 1;
+    let t1Players = JSON.parse(JSON.stringify(TASK1_DEFAULT));
+    let t1Mode = "per90";
+    let t2Filter = "all";
+
+    let t1RadarChart = null;
+    let t1BarChart = null;
+    let t2PctChart = null;
+    let t2ClubChart = null;
+
+    const per90 = (val, mins) => (mins > 0 ? +(val / (mins / 90)).toFixed(2) : 0);
+
+    /* ================================================================
+       TAB SWITCHING
+       ================================================================ */
+    function switchTab(tabNum) {
+      activeTab = tabNum;
+      const v1 = document.getElementById("viewTab1");
+      const v2 = document.getElementById("viewTab2");
+      const b1 = document.getElementById("tabBtn1");
+      const b2 = document.getElementById("tabBtn2");
+      const csvCtrl = document.getElementById("csvControls");
+      const printSub = document.getElementById("printSubtitle");
+
+      if (tabNum === 1) {
+        v1.classList.remove("hidden");
+        v2.classList.add("hidden");
+        csvCtrl.classList.remove("hidden");
+        b1.className = "px-3.5 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 font-semibold whitespace-nowrap transition";
+        b2.className = "px-3.5 py-1.5 rounded-lg bg-slate-800/80 text-slate-300 hover:text-white border border-slate-700 font-medium whitespace-nowrap transition";
+        printSub.textContent = "Module 01 — League One Striker Benchmark & Step-Up Assessment";
+        requestAnimationFrame(() => renderTask1Charts());
+      } else {
+        v1.classList.add("hidden");
+        v2.classList.remove("hidden");
+        csvCtrl.classList.add("hidden");
+        b2.className = "px-3.5 py-1.5 rounded-lg bg-sky-500/15 text-sky-300 border border-sky-500/40 font-semibold whitespace-nowrap transition";
+        b1.className = "px-3.5 py-1.5 rounded-lg bg-slate-800/80 text-slate-300 hover:text-white border border-slate-700 font-medium whitespace-nowrap transition";
+        printSub.textContent = "Module 02 — Lewis Hall Statistical Profile & Club Fit Matrix";
+        requestAnimationFrame(() => renderTask2Charts());
+      }
+    }
+
+    /* ================================================================
+       TASK 1 RENDERERS
+       ================================================================ */
+    function renderTask1Cards() {
+      const isP90 = t1Mode === "per90";
+      document.getElementById("t1PlayerCards").innerHTML = t1Players.map((p, idx) => {
+        const isTarget = idx === 0;
+        const gVal = isP90 ? per90(p.goals, p.minutes).toFixed(2) : p.goals;
+        const xgVal = isP90 ? per90(p.xg, p.minutes).toFixed(2) : p.xg.toFixed(2);
+        const xgotVal = isP90 ? per90(p.xgot, p.minutes).toFixed(2) : p.xgot.toFixed(2);
+        const sfx = isP90 ? "/90" : "";
+        return `
+          <div class="print-card rounded-2xl border ${isTarget ? "border-emerald-500/50 bg-slate-900" : "border-slate-800 bg-slate-900/80"} p-5">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="inline-block text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full mb-2"
+                  style="background:${p.color}22; color:${p.color}; border:1px solid ${p.color}55;">
+                  ${p.roleTag || (isTarget ? "Target Asset" : "Peer Benchmark")}
+                </span>
+                <h3 class="text-lg font-bold text-white print-text-dark">${p.name}</h3>
+                <p class="text-xs text-slate-400 print-text-muted">${p.club} · Age ${p.age} · ${p.heightCm} cm</p>
+              </div>
+              <div class="text-right">
+                <div class="text-xl font-black" style="color:${p.color}">${p.rating.toFixed(2)}</div>
+                <div class="text-[10px] uppercase tracking-wider text-slate-400">FotMob Rtg</div>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-slate-800 text-center">
+              <div class="rounded-lg bg-slate-950/60 print-bg-light p-2">
+                <div class="text-base font-bold text-white print-text-dark">${gVal}</div>
+                <div class="text-[10px] uppercase text-slate-400">Goals${sfx}</div>
+              </div>
+              <div class="rounded-lg bg-slate-950/60 print-bg-light p-2">
+                <div class="text-base font-bold text-white print-text-dark">${xgVal}</div>
+                <div class="text-[10px] uppercase text-slate-400">xG${sfx}</div>
+              </div>
+              <div class="rounded-lg bg-slate-950/60 print-bg-light p-2">
+                <div class="text-base font-bold text-white print-text-dark">${xgotVal}</div>
+                <div class="text-[10px] uppercase text-slate-400">xGOT${sfx}</div>
+              </div>
+            </div>
+            <div class="mt-3 flex items-center justify-between text-xs text-slate-400 print-text-muted">
+              <span>${p.matches} apps · ${p.minutes.toLocaleString()} mins</span>
+              <span>Contract: <strong class="text-slate-200 print-text-dark">${p.contractExpiry}</strong></span>
+            </div>
+          </div>`;
+      }).join("");
+    }
+
+    function renderTask1Table() {
+      const isP90 = t1Mode === "per90";
+      document.getElementById("t1TableModeLabel").textContent = isP90 ? "Showing Per-90 Rates" : "Showing Season Totals";
+      document.getElementById("t1ComparisonHead").innerHTML = `
+        <tr>
+          <th class="px-5 py-3">Metric</th>
+          ${t1Players.map(p => `<th class="px-5 py-3 text-right"><span class="inline-block w-2 h-2 rounded-full mr-1.5" style="background:${p.color}"></span>${p.name}</th>`).join("")}
+        </tr>`;
+
+      const rows = [
+        { label: "Age / Height", format: p => `${p.age} yrs / ${p.heightCm} cm` },
+        { label: "Contract / Est. Value", format: p => `${p.contractExpiry} · ${p.marketValue}` },
+        { label: "Matches / Minutes", format: p => `${p.matches} / ${p.minutes.toLocaleString()}'` },
+        { label: isP90 ? "Goals / 90" : "Goals (Season)", val: p => isP90 ? per90(p.goals, p.minutes) : p.goals, format: p => isP90 ? per90(p.goals, p.minutes).toFixed(2) : p.goals, max: true },
+        { label: isP90 ? "xG / 90" : "Expected Goals (xG)", val: p => isP90 ? per90(p.xg, p.minutes) : p.xg, format: p => (isP90 ? per90(p.xg, p.minutes) : p.xg).toFixed(2), max: true },
+        { label: isP90 ? "xGOT / 90" : "xG on Target (xGOT)", val: p => isP90 ? per90(p.xgot, p.minutes) : p.xgot, format: p => (isP90 ? per90(p.xgot, p.minutes) : p.xgot).toFixed(2), max: true },
+        { label: "Goals minus xG (Variance)", format: p => { const d = +(p.goals - p.xg).toFixed(2); return `${d > 0 ? "+" : ""}${d.toFixed(2)}`; } },
+        { label: isP90 ? "Shots / 90" : "Total Shots", val: p => isP90 ? per90(p.shots, p.minutes) : p.shots, format: p => isP90 ? per90(p.shots, p.minutes).toFixed(2) : p.shots, max: true },
+        { label: "Shot Accuracy (%)", val: p => p.shotAccuracyPct, format: p => `${p.shotAccuracyPct.toFixed(1)}%`, max: true },
+        { label: isP90 ? "Fast-Break Shots / 90" : "Fast-Break Shots", val: p => isP90 ? per90(p.fastBreakShots, p.minutes) : p.fastBreakShots, format: p => isP90 ? per90(p.fastBreakShots, p.minutes).toFixed(2) : p.fastBreakShots, max: true },
+        { label: "Pass Accuracy (%)", val: p => p.passAccuracyPct, format: p => `${p.passAccuracyPct.toFixed(1)}%`, max: true },
+        { label: isP90 ? "Line-Breaking Passes / 90" : "Line-Breaking Passes", val: p => isP90 ? per90(p.lineBreakingPasses, p.minutes) : p.lineBreakingPasses, format: p => isP90 ? per90(p.lineBreakingPasses, p.minutes).toFixed(2) : p.lineBreakingPasses, max: true },
+        { label: isP90 ? "Expected Assists (xA) / 90" : "Expected Assists (xA)", val: p => isP90 ? per90(p.xa, p.minutes) : p.xa, format: p => (isP90 ? per90(p.xa, p.minutes) : p.xa).toFixed(2), max: true },
+        { label: isP90 ? "Touches / 90" : "Total Touches", val: p => isP90 ? per90(p.touches, p.minutes) : p.touches, format: p => isP90 ? per90(p.touches, p.minutes).toFixed(1) : p.touches, max: true },
+        { label: "Aerial Duels Won (%)", val: p => p.aerialWinPct, format: p => `${p.aerialWinPct.toFixed(1)}%`, max: true }
+      ];
+
+      document.getElementById("t1ComparisonBody").innerHTML = rows.map(row => {
+        const best = row.max ? Math.max(...t1Players.map(row.val)) : null;
+        return `
+          <tr class="hover:bg-slate-800/40">
+            <td class="px-5 py-3 font-medium text-slate-300 print-text-dark">${row.label}</td>
+            ${t1Players.map(p => {
+              const isBest = row.max && row.val(p) === best;
+              return `<td class="px-5 py-3 text-right ${isBest ? "text-emerald-400 font-bold" : "text-slate-200 print-text-dark"}">${row.format(p)}</td>`;
+            }).join("")}
+          </tr>`;
+      }).join("");
+    }
+
+    function renderTask1Charts() {
+      if (typeof Chart === "undefined") return;
+      const clamp = v => Math.min(100, Math.max(5, Math.round(v)));
+
+      if (t1RadarChart) t1RadarChart.destroy();
+      t1RadarChart = new Chart(document.getElementById("t1RadarChart"), {
+        type: "radar",
+        data: {
+          labels: ["Goals / 90", "xGOT / 90", "Shot Accuracy", "Fast-Break Threat", "Line-Breaking / 90", "Pass Accuracy", "Aerial Win %"],
+          datasets: t1Players.map(p => ({
+            label: p.name,
+            data: [
+              clamp((per90(p.goals, p.minutes) / 1.25) * 100),
+              clamp((per90(p.xgot, p.minutes) / 0.90) * 100),
+              clamp((p.shotAccuracyPct / 60) * 100),
+              clamp((per90(p.fastBreakShots, p.minutes) / 1.1) * 100),
+              clamp((per90(p.lineBreakingPasses, p.minutes) / 2.0) * 100),
+              clamp((p.passAccuracyPct / 85) * 100),
+              clamp((p.aerialWinPct / 65) * 100)
+            ],
+            borderColor: p.color,
+            backgroundColor: `${p.color}24`,
+            borderWidth: 2.5,
+            pointRadius: 3
+          }))
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              min: 0, max: 100,
+              ticks: { display: false, stepSize: 25 },
+              grid: { color: "rgba(148,163,184,0.18)" },
+              angleLines: { color: "rgba(148,163,184,0.18)" },
+              pointLabels: { color: "#cbd5e1", font: { size: 11, weight: "600" } }
+            }
+          },
+          plugins: { legend: { labels: { color: "#e2e8f0", boxWidth: 12, font: { size: 12 } } } }
+        }
+      });
+
+      const isP90 = t1Mode === "per90";
+      document.getElementById("t1BarChartTitle").textContent = isP90
+        ? "Finishing Sustainability (Per 90): Goals vs xG vs xGOT"
+        : "Finishing Sustainability (Totals): Goals vs xG vs xGOT";
+
+      if (t1BarChart) t1BarChart.destroy();
+      t1BarChart = new Chart(document.getElementById("t1FinishingChart"), {
+        type: "bar",
+        data: {
+          labels: t1Players.map(p => p.name),
+          datasets: [
+            { label: isP90 ? "Goals / 90" : "Actual Goals", data: t1Players.map(p => isP90 ? per90(p.goals, p.minutes) : p.goals), backgroundColor: "#10b981", borderRadius: 6 },
+            { label: isP90 ? "xG / 90" : "Expected Goals (xG)", data: t1Players.map(p => isP90 ? per90(p.xg, p.minutes) : p.xg), backgroundColor: "#38bdf8", borderRadius: 6 },
+            { label: isP90 ? "xGOT / 90" : "xG on Target (xGOT)", data: t1Players.map(p => isP90 ? per90(p.xgot, p.minutes) : p.xgot), backgroundColor: "#f59e0b", borderRadius: 6 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { ticks: { color: "#e2e8f0" }, grid: { display: false } },
+            y: { beginAtZero: true, ticks: { color: "#94a3b8" }, grid: { color: "rgba(148,163,184,0.12)" } }
+          },
+          plugins: { legend: { labels: { color: "#e2e8f0", boxWidth: 12, font: { size: 12 } } } }
+        }
+      });
+    }
+
+    function renderTask1All() {
+      renderTask1Cards();
+      renderTask1Table();
+      renderTask1Charts();
+    }
+
+    /* ================================================================
+       TASK 2 RENDERERS (LEWIS HALL & CLUB FIT MATRIX)
+       ================================================================ */
+    function renderTask2Kpis() {
+      document.getElementById("t2KpiStrip").innerHTML = TASK2_DATA.kpis.map(k => `
+        <div class="rounded-xl bg-slate-950/70 print-bg-light border border-slate-800/80 p-3">
+          <div class="text-[11px] uppercase tracking-wider text-slate-400">${k.label}</div>
+          <div class="text-xl font-black mt-1 ${k.accent}">${k.value}</div>
+          <div class="text-[11px] text-slate-400 print-text-muted mt-0.5">${k.sub}</div>
+        </div>
+      `).join("");
+    }
+
+    function getFilteredClubs() {
+      if (t2Filter === "all") return TASK2_DATA.clubs;
+      return TASK2_DATA.clubs.filter(c => c.needType === t2Filter || c.needType === "baseline");
+    }
+
+    function badgeHtml(type, label) {
+      if (type === "confirmed") return `<span class="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 whitespace-nowrap">${label}</span>`;
+      if (type === "inferred") return `<span class="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30 whitespace-nowrap">${label}</span>`;
+      return `<span class="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-slate-800 text-slate-300 border border-slate-700 whitespace-nowrap">${label}</span>`;
+    }
+
+    function renderTask2Clubs() {
+      const clubs = getFilteredClubs();
+
+      document.getElementById("t2ClubTableBody").innerHTML = clubs.map(c => `
+        <tr class="${c.needType === "baseline" ? "bg-slate-950/50" : "hover:bg-slate-800/40"}">
+          <td class="px-4 py-3.5 font-bold text-white print-text-dark whitespace-nowrap">${c.club}</td>
+          <td class="px-4 py-3.5">${badgeHtml(c.needType, c.needLabel)}</td>
+          <td class="px-4 py-3.5 text-right font-black ${c.fitScore >= 90 ? "text-emerald-400" : c.fitScore >= 85 ? "text-sky-400" : "text-slate-300 print-text-dark"}">${c.fitScore}/100</td>
+          <td class="px-4 py-3.5 text-right text-slate-200 print-text-dark whitespace-nowrap">${c.possession.toFixed(1)}% <span class="text-xs text-slate-400">(${c.possRank})</span></td>
+          <td class="px-4 py-3.5 text-right text-slate-200 print-text-dark whitespace-nowrap">${c.accPasses.toFixed(1)} · ${c.passPct.toFixed(1)}% <span class="text-xs text-slate-400">(${c.passRank})</span></td>
+          <td class="px-4 py-3.5 text-right text-slate-200 print-text-dark whitespace-nowrap">${c.accCrosses.toFixed(1)} · ${c.crossPct.toFixed(1)}% <span class="text-xs text-slate-400">(${c.crossRank})</span></td>
+          <td class="px-4 py-3.5 text-xs text-slate-300 print-text-dark min-w-[240px]">${c.shortVerdict}</td>
+        </tr>
+      `).join("");
+
+      const destinations = clubs.filter(c => c.needType !== "baseline");
+      document.getElementById("t2ClubCards").innerHTML = destinations.map(c => `
+        <div class="print-card rounded-2xl border ${c.needType === "confirmed" ? "border-emerald-500/40" : "border-slate-800"} bg-slate-900 p-5 space-y-3">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <h3 class="text-base font-bold text-white print-text-dark">${c.club}</h3>
+                ${badgeHtml(c.needType, c.needLabel)}
+              </div>
+              <p class="text-xs text-slate-400 print-text-muted">${c.possession.toFixed(1)}% Poss (${c.possRank}) · ${c.accPasses.toFixed(1)} Acc. Passes (${c.passRank})</p>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="text-xl font-black ${c.needType === "confirmed" ? "text-emerald-400" : "text-sky-400"}">${c.fitScore}</div>
+              <div class="text-[10px] uppercase tracking-wider text-slate-400">Fit Score</div>
+            </div>
+          </div>
+          <ul class="text-xs sm:text-sm text-slate-300 print-text-dark space-y-1.5 list-disc list-inside">
+            ${c.pitchPoints.map(pt => `<li>${pt}</li>`).join("")}
+          </ul>
+        </div>
+      `).join("");
+    }
+
+    function renderTask2Charts() {
+      if (typeof Chart === "undefined") return;
+
+      if (t2PctChart) t2PctChart.destroy();
+      t2PctChart = new Chart(document.getElementById("t2PercentileChart"), {
+        type: "bar",
+        data: {
+          labels: TASK2_DATA.percentiles.map(p => p.label),
+          datasets: [{
+            label: "PL Fullback Percentile",
+            data: TASK2_DATA.percentiles.map(p => p.value),
+            backgroundColor: TASK2_DATA.percentiles.map(p => p.value >= 75 ? "#10b981" : p.value >= 60 ? "#38bdf8" : "#f59e0b"),
+            borderRadius: 6
+          }]
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { min: 0, max: 100, ticks: { color: "#94a3b8", callback: v => `${v}%` }, grid: { color: "rgba(148,163,184,0.12)" } },
+            y: { ticks: { color: "#e2e8f0", font: { size: 11, weight: "600" } }, grid: { display: false } }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+
+      const chartClubs = ["Manchester City", "Tottenham Hotspur", "Arsenal", "Manchester United", "Newcastle United"]
+        .map(name => TASK2_DATA.clubs.find(c => c.club === name));
+
+      if (t2ClubChart) t2ClubChart.destroy();
+      t2ClubChart = new Chart(document.getElementById("t2ClubPassChart"), {
+        type: "bar",
+        data: {
+          labels: chartClubs.map(c => c.club.replace(" Hotspur", "").replace(" United", " Utd")),
+          datasets: [{
+            label: "Accurate Passes / Match",
+            data: chartClubs.map(c => c.accPasses),
+            backgroundColor: chartClubs.map(c =>
+              c.needType === "confirmed" ? "#10b981" : c.needType === "baseline" ? "#64748b" : "#38bdf8"
+            ),
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { ticks: { color: "#e2e8f0" }, grid: { display: false } },
+            y: { beginAtZero: true, max: 620, ticks: { color: "#94a3b8" }, grid: { color: "rgba(148,163,184,0.12)" } }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                afterLabel: (ctx) => {
+                  const club = chartClubs[ctx.dataIndex];
+                  return `Pass Accuracy: ${club.passPct}% | Possession: ${club.possession}%`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    /* ================================================================
+       INIT & EVENT WIRING
+       ================================================================ */
+    document.addEventListener("DOMContentLoaded", () => {
+      // Initial renders
+      renderTask1All();
+      renderTask2Kpis();
+      renderTask2Clubs();
+
+      // Module tabs
+      document.getElementById("tabBtn1").addEventListener("click", () => switchTab(1));
+      document.getElementById("tabBtn2").addEventListener("click", () => switchTab(2));
+
+      // Task 1 Per-90 / Totals Toggle
+      const btnP90 = document.getElementById("modePer90");
+      const btnTot = document.getElementById("modeTotals");
+      const t1Active = "px-3 py-1.5 text-xs font-semibold rounded-md bg-emerald-500 text-slate-950 whitespace-nowrap transition";
+      const t1Idle = "px-3 py-1.5 text-xs font-semibold rounded-md text-slate-400 hover:text-white whitespace-nowrap transition";
+      btnP90.addEventListener("click", () => { t1Mode = "per90"; btnP90.className = t1Active; btnTot.className = t1Idle; renderTask1All(); });
+      btnTot.addEventListener("click", () => { t1Mode = "totals"; btnTot.className = t1Active; btnP90.className = t1Idle; renderTask1All(); });
+
+      // Task 2 Confirmed / Inferred Filter
+      const fBtns = {
+        all: document.getElementById("t2FilterAll"),
+        confirmed: document.getElementById("t2FilterConfirmed"),
+        inferred: document.getElementById("t2FilterInferred")
+      };
+      const t2Active = "px-3 py-1.5 text-xs font-semibold rounded-md bg-sky-500 text-slate-950 whitespace-nowrap transition";
+      const t2Idle = "px-3 py-1.5 text-xs font-semibold rounded-md text-slate-400 hover:text-white whitespace-nowrap transition";
+      Object.entries(fBtns).forEach(([key, btn]) => {
+        btn.addEventListener("click", () => {
+          t2Filter = key;
+          Object.entries(fBtns).forEach(([k, b]) => b.className = k === key ? t2Active : t2Idle);
+          renderTask2Clubs();
+        });
+      });
+
+      // Task 1 CSV Upload & Reset
+      const PALETTE = ["#10b981", "#38bdf8", "#f59e0b", "#a855f7", "#f43f5e"];
+      document.getElementById("csvInput").addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const lines = ev.target.result.trim().split(/\r?\n/).filter(Boolean);
+          if (lines.length < 2) return alert("CSV needs a header row and at least 1 player row.");
+          const headers = lines[0].split(",").map(h => h.trim());
+          t1Players = lines.slice(1).map((line, i) => {
+            const cols = line.split(",").map(c => c.trim());
+            const obj = {};
+            headers.forEach((h, idx) => obj[h] = cols[idx]);
+            return {
+              name: obj.name || `Player ${i + 1}`, club: obj.club || "N/A",
+              roleTag: i === 0 ? "Target Asset" : "Imported Peer",
+              age: Number(obj.age) || 0, heightCm: Number(obj.heightCm) || 0,
+              contractExpiry: obj.contractExpiry || "N/A", marketValue: obj.marketValue || "N/A",
+              matches: Number(obj.matches) || 0, minutes: Number(obj.minutes) || 90,
+              goals: Number(obj.goals) || 0, assists: Number(obj.assists) || 0,
+              xg: Number(obj.xg) || 0, xgot: Number(obj.xgot) || 0,
+              shots: Number(obj.shots) || 0, shotAccuracyPct: Number(obj.shotAccuracyPct) || 0,
+              fastBreakShots: Number(obj.fastBreakShots) || 0, accuratePasses: Number(obj.accuratePasses) || 0,
+              passAccuracyPct: Number(obj.passAccuracyPct) || 0, lineBreakingPasses: Number(obj.lineBreakingPasses) || 0,
+              xa: Number(obj.xa) || 0, touches: Number(obj.touches) || 0,
+              aerialWinPct: Number(obj.aerialWinPct) || 0, rating: Number(obj.rating) || 0,
+              color: PALETTE[i % PALETTE.length]
+            };
+          });
+          document.getElementById("csvBanner").classList.remove("hidden");
+          document.getElementById("csvBannerText").textContent = `Loaded ${t1Players.length} player(s) from "${file.name}".`;
+          document.getElementById("resetBtn").classList.remove("hidden");
+          renderTask1All();
+        };
+        reader.readAsText(file);
+      });
+
+      document.getElementById("resetBtn").addEventListener("click", () => {
+        t1Players = JSON.parse(JSON.stringify(TASK1_DEFAULT));
+        document.getElementById("csvBanner").classList.add("hidden");
+        document.getElementById("resetBtn").classList.add("hidden");
+        document.getElementById("csvInput").value = "";
+        renderTask1All();
+      });
+    });
+  </script>
+</body>
+</html>
